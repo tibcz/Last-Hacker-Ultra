@@ -8,7 +8,6 @@ export const DEFAULT_CONFIG = {
   submitCooldownMs: 1500, // per hacker, so nobody brute-forces the referee
   maxHours: 0,            // 0 = the real rule: it ends when people end
   lateEntry: false,       // authentic backyard: everyone starts together
-  maxHandleLength: 24,
 };
 
 const HANDLE_RE = /^[a-zA-Z0-9_\-.]{2,24}$/;
