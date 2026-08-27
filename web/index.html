@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en" data-band="warmup">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Last Hacker Ultra</title>
+<meta name="description" content="One challenge every hour, on the hour. It never gets easier. Last hacker standing wins.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230a0b0d'/><rect x='6' y='6' width='8' height='8' fill='%23ff9a3c'/><rect x='18' y='6' width='8' height='8' fill='%23ff9a3c'/><rect x='6' y='18' width='8' height='8' fill='%23ff9a3c'/><path d='M18 18l8 8M26 18l-8 8' stroke='%23e5563a' stroke-width='3'/></svg>">
+</head>
+<body>
+<div class="lamp" aria-hidden="true"></div>
+
+<header class="masthead">
+  <div class="masthead__mark">
+    <span class="masthead__title">Last Hacker Ultra</span>
+    <span class="masthead__sub" id="raceName">loading the board</span>
+  </div>
+  <div class="masthead__meta">
+    <span class="chip" id="statusChip">connecting</span>
+    <span class="masthead__id" id="raceId"></span>
+  </div>
+</header>
+
+<section class="bell" aria-live="polite">
+  <div class="bell__clockwrap">
+    <p class="eyebrow">Next bell in</p>
+    <p class="bell__clock" id="clock">--:--</p>
+    <p class="bell__note" id="bellNote">waiting for the corral to fill</p>
+  </div>
+  <div class="bell__hour">
+    <p class="eyebrow">Hour</p>
+    <p class="bell__hournum" id="hourNum">0</p>
+    <p class="bell__band" id="bandLabel">CORRAL</p>
+  </div>
+  <dl class="bell__stats">
+    <div><dt>Still running</dt><dd id="statRunning">0</dd></div>
+    <div><dt>Out</dt><dd id="statOut">0</dd></div>
+    <div><dt>Difficulty</dt><dd id="statDiff">—</dd></div>
+  </dl>
+  <div class="drain" id="drain"><span class="drain__fill" id="drainFill"></span></div>
+</section>
+
+<main class="grid">
+  <!-- ------------------------------------------------------------ hour -- -->
+  <section class="panel panel--hour">
+    <div class="panel__head">
+      <h2 class="panel__title" id="challengeTitle">The corral</h2>
+      <span class="tag" id="challengeDifficulty">—</span>
+    </div>
+    <p class="blurb" id="challengeBlurb">Sign-ups are open until the first bell.</p>
+    <div class="panel__body">
+      <p class="prose" id="challengeBrief">
+        Sign up below. When the first bell rings, everyone gets the same challenge and the same
+        hour to solve it. Miss it and you are out. The hour after this one is harder. So is the
+        one after that.
+      </p>
+      <div id="challengeData"></div>
+    </div>
+
+    <form class="answer" id="answerForm" hidden>
+      <label class="eyebrow" for="answerInput">Your answer <span id="answerFormat"></span></label>
+      <div class="answer__row">
+        <input id="answerInput" class="answer__input" autocomplete="off" spellcheck="false"
+               placeholder="paste it here" aria-describedby="answerResult">
+        <button class="btn btn--go" type="submit" id="answerSubmit">Submit</button>
+      </div>
+      <p class="answer__result" id="answerResult" role="status"></p>
+    </form>
+
+    <p class="panel__foot" id="challengeFoot"></p>
+  </section>
+
+  <!-- ----------------------------------------------------------- board -- -->
+  <section class="panel panel--board">
+    <div class="panel__head">
+      <h2 class="panel__title">The board</h2>
+      <span class="tag" id="boardCount">0 entrants</span>
+    </div>
+    <div class="tally" id="tally"><p class="empty">Nobody has signed up yet.</p></div>
+    <p class="legend">
+      <span><i class="mark mark--done"></i> cleared</span>
+      <span><i class="mark mark--running"></i> in the hour</span>
+      <span><i class="mark mark--dnf"></i> out</span>
+    </p>
+  </section>
+
+  <!-- --------------------------------------------------------- entrant -- -->
+  <section class="panel panel--you">
+    <div class="panel__head">
+      <h2 class="panel__title" id="youTitle">Enter the race</h2>
+      <span class="tag" id="youTag">open</span>
+    </div>
+
+    <form class="signup" id="signupForm">
+      <p class="prose">Pick a handle. You get one token — it is the only copy, and it is how you submit.</p>
+      <div class="answer__row">
+        <input id="handleInput" class="answer__input" maxlength="24" autocomplete="off"
+               spellcheck="false" placeholder="handle" aria-label="Your handle">
+        <button class="btn" type="submit">Sign up</button>
+      </div>
+      <p class="answer__result" id="signupResult" role="status"></p>
+    </form>
+
+    <div class="you" id="youCard" hidden>
+      <p class="you__handle" id="youHandle"></p>
+      <dl class="you__stats">
+        <div><dt>Status</dt><dd id="youStatus">—</dd></div>
+        <div><dt>Hours cleared</dt><dd id="youHours">0</dd></div>
+        <div><dt>Attempts</dt><dd id="youAttempts">0</dd></div>
+      </dl>
+      <details class="you__token">
+        <summary>Your token</summary>
+        <code id="youToken"></code>
+        <p class="hint">Kept in this browser only. Copy it if you want to play from a terminal.</p>
+      </details>
+      <button class="btn btn--quiet" id="forgetBtn" type="button">Forget this token</button>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------- record -- -->
+  <section class="panel panel--record">
+    <div class="panel__head">
+      <h2 class="panel__title">The record</h2>
+      <span class="tag">live</span>
+    </div>
+    <ol class="ticker" id="ticker"><li class="ticker__item"><span class="ticker__when">--:--</span> waiting for the first bell</li></ol>
+  </section>
+</main>
+
+<footer class="footer">
+  <div>
+    <p class="eyebrow">Run it from a terminal</p>
+    <pre class="code">./bin/lhu.js watch             # the board, in your shell
+./bin/lhu.js signup &lt;handle&gt;   # take a bib
+./bin/lhu.js solve             # fetch, solve, submit</pre>
+  </div>
+  <div>
+    <p class="eyebrow">The rules</p>
+    <p class="prose small">Every hour, on the hour, one challenge. Solve it before the next bell or
+    you are out. The winner is whoever clears one more hour than everybody else — so the last
+    hacker standing still has to go out alone and finish one more. If they don't, nobody wins.</p>
+  </div>
+</footer>
+
+<script src="/app.js"></script>
+</body>
+</html>

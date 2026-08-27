@@ -1,0 +1,21 @@
+{
+  "name": "last-hacker-ultra",
+  "version": "1.0.0",
+  "description": "A backyard-ultra for hackers. One challenge every hour, on the hour. It gets harder forever. Last hacker standing wins.",
+  "type": "module",
+  "bin": {
+    "lhu": "./bin/lhu.js"
+  },
+  "main": "src/server/server.js",
+  "scripts": {
+    "start": "node src/server/server.js",
+    "demo": "node tools/demo.js",
+    "test": "node --test",
+    "solve": "node tools/solver.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "private": true
+}

@@ -1,0 +1,440 @@
+/* ---------------------------------------------------------------------------
+   Last Hacker Ultra
+
+   The page runs the same arc the race does: it starts in flat daylight and the
+   light drains out of it band by band, until the only thing left lit is the
+   worklight over the board. Every colour below is keyed to `html[data-band]`,
+   which the client sets from the current hour.
+   --------------------------------------------------------------------------- */
+
+:root {
+  --paper: #e4dcc8;
+  --ink: #17181c;
+  --muted: #6b6352;
+  --rule: #bfb49a;
+  --hot: #c2571b;
+  --rust: #9c2f18;
+  --panel: rgba(255, 255, 255, .28);
+  --lamp: rgba(255, 214, 150, 0);
+  --grid-empty: rgba(23, 24, 28, .1);
+
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --cond: "IBM Plex Sans Condensed", "Roboto Condensed", ui-sans-serif, system-ui, sans-serif;
+
+  --gutter: clamp(1rem, 3.2vw, 2.75rem);
+  --step: 6px;
+}
+
+html[data-band="steady"] {
+  --paper: #cdc4ae; --ink: #17181c; --muted: #5f5749; --rule: #a79b82;
+  --hot: #bb4f16; --rust: #922c16; --panel: rgba(255, 255, 255, .24);
+  --lamp: rgba(255, 205, 130, .05); --grid-empty: rgba(23, 24, 28, .12);
+}
+html[data-band="grind"] {
+  --paper: #a8a190; --ink: #131419; --muted: #4c4536; --rule: #857c6a;
+  --hot: #a8420f; --rust: #7f2410; --panel: rgba(255, 255, 255, .18);
+  --lamp: rgba(255, 200, 120, .1); --grid-empty: rgba(19, 20, 25, .14);
+}
+html[data-band="attrition"] {
+  --paper: #45464b; --ink: #e9e2d2; --muted: #a29b8a; --rule: #63646a;
+  --hot: #f08b34; --rust: #d4523a; --panel: rgba(255, 255, 255, .06);
+  --lamp: rgba(255, 190, 110, .16); --grid-empty: rgba(233, 226, 210, .12);
+}
+html[data-band="deep"] {
+  --paper: #22252b; --ink: #e4dcc8; --muted: #8d8878; --rule: #3c4048;
+  --hot: #ff9a3c; --rust: #e5563a; --panel: rgba(255, 255, 255, .04);
+  --lamp: rgba(255, 180, 100, .22); --grid-empty: rgba(228, 220, 200, .1);
+}
+html[data-band="nightmare"] {
+  --paper: #0a0b0d; --ink: #efe7d6; --muted: #7d786b; --rule: #24262b;
+  --hot: #ffab4f; --rust: #ff5f42; --panel: rgba(255, 255, 255, .03);
+  --lamp: rgba(255, 176, 92, .3); --grid-empty: rgba(239, 231, 214, .08);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 15px;
+  line-height: 1.55;
+  font-variant-numeric: tabular-nums;
+  transition: background-color 1.4s ease, color 1.4s ease;
+  overflow-x: hidden;
+}
+
+/* The worklight. Constant output; it only *looks* brighter as everything
+   around it goes dark, which is exactly what happens at 3am. */
+.lamp {
+  position: fixed;
+  inset: -20vh 0 auto 0;
+  height: 90vh;
+  pointer-events: none;
+  background: radial-gradient(60vw 50vh at 50% 0%, var(--lamp), transparent 70%);
+  transition: background 1.4s ease;
+  z-index: 0;
+}
+
+body > * { position: relative; z-index: 1; }
+
+.eyebrow {
+  font-family: var(--cond);
+  font-weight: 700;
+  font-size: .72rem;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 .35rem;
+}
+
+.prose { margin: 0 0 1rem; max-width: 62ch; }
+.prose.small { font-size: .85rem; }
+.hint { color: var(--muted); font-size: .78rem; margin: .4rem 0 0; }
+
+/* ------------------------------------------------------------- masthead -- */
+
+.masthead {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 1.4rem var(--gutter) 1rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.masthead__title {
+  font-family: var(--cond);
+  font-weight: 700;
+  font-size: clamp(1.1rem, 2.4vw, 1.5rem);
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  display: block;
+}
+
+.masthead__sub { color: var(--muted); font-size: .8rem; letter-spacing: .04em; }
+.masthead__meta { display: flex; align-items: center; gap: .8rem; }
+.masthead__id { color: var(--muted); font-size: .72rem; letter-spacing: .12em; }
+
+.chip {
+  font-family: var(--cond);
+  font-weight: 700;
+  font-size: .7rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  border: 1px solid currentColor;
+  padding: .18rem .6rem;
+  color: var(--hot);
+}
+.chip[data-state="finished"] { color: var(--muted); }
+
+/* ----------------------------------------------------------------- bell -- */
+
+.bell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) auto minmax(0, 1fr);
+  gap: clamp(1rem, 4vw, 3rem);
+  align-items: end;
+  padding: clamp(1.6rem, 4vw, 3rem) var(--gutter) 0;
+}
+
+.bell__clock {
+  font-size: clamp(3.4rem, 12vw, 8.5rem);
+  font-weight: 600;
+  line-height: .84;
+  letter-spacing: -.045em;
+  margin: 0;
+  font-feature-settings: "zero" 1;
+}
+.bell__clock[data-warning="true"] { color: var(--hot); }
+.bell__note { color: var(--muted); font-size: .82rem; margin: .7rem 0 0; }
+
+.bell__hour { text-align: center; }
+.bell__hournum {
+  font-family: var(--cond);
+  font-weight: 700;
+  font-size: clamp(2.6rem, 7vw, 4.6rem);
+  line-height: .9;
+  margin: 0;
+}
+.bell__band {
+  font-family: var(--cond);
+  font-weight: 700;
+  font-size: .72rem;
+  letter-spacing: .2em;
+  color: var(--hot);
+  margin: .5rem 0 0;
+}
+
+.bell__stats { display: grid; gap: .55rem; margin: 0; }
+.bell__stats div { display: flex; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--rule); padding-bottom: .3rem; }
+.bell__stats dt { font-family: var(--cond); font-size: .74rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.bell__stats dd { margin: 0; font-weight: 600; }
+
+/* The hour draining away. It is the only thing on the page that moves on its own. */
+.drain {
+  grid-column: 1 / -1;
+  height: 3px;
+  background: var(--grid-empty);
+  margin-top: clamp(1.4rem, 3vw, 2.4rem);
+  overflow: hidden;
+}
+.drain__fill {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: var(--hot);
+  transform-origin: left center;
+  transition: transform .9s linear;
+}
+.drain[data-warning="true"] .drain__fill { animation: pulse 1s steps(2, end) infinite; }
+
+@keyframes pulse { 50% { opacity: .25; } }
+
+/* ---------------------------------------------------------------- grid -- */
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 1px;
+  background: var(--rule);
+  border-block: 1px solid var(--rule);
+  margin-top: clamp(1.6rem, 4vw, 3rem);
+}
+
+.panel {
+  background: var(--paper);
+  padding: 1.3rem var(--gutter) 1.6rem;
+  min-width: 0;
+}
+.panel--hour { grid-row: span 2; }
+.panel--record { grid-column: 1 / -1; }
+
+.panel__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: .6rem;
+  margin-bottom: 1rem;
+}
+.panel__title {
+  font-family: var(--cond);
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  margin: 0;
+}
+.panel__foot { color: var(--muted); font-size: .76rem; margin: 1rem 0 0; }
+.blurb { color: var(--muted); font-size: .8rem; margin: -.6rem 0 1rem; }
+
+.tag {
+  font-family: var(--cond);
+  font-size: .7rem;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--hot);
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------- challenge -- */
+
+.field { margin: 0 0 1.1rem; }
+details.field > summary { cursor: pointer; list-style: none; }
+details.field > summary::-webkit-details-marker { display: none; }
+details.field > summary::after { content: ' ▾'; color: var(--hot); }
+details.field[open] > summary::after { content: ' ▴'; }
+
+.field__label {
+  font-family: var(--cond);
+  font-weight: 600;
+  font-size: .72rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: .3rem;
+}
+
+.code, .field__value {
+  font-family: var(--mono);
+  font-size: .8rem;
+  line-height: 1.5;
+  background: var(--panel);
+  border-left: 2px solid var(--rule);
+  padding: .7rem .85rem;
+  margin: 0;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 22rem;
+  overflow-y: auto;
+}
+.field__value--pre { white-space: pre; word-break: normal; }
+
+.facts { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0 0 1.1rem; padding: 0; list-style: none; }
+.facts li {
+  font-size: .74rem;
+  border: 1px solid var(--rule);
+  padding: .2rem .55rem;
+}
+.facts b { font-weight: 600; color: var(--hot); }
+
+.numbers { display: grid; grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr)); gap: .1rem .8rem; }
+.numbers span { font-size: .74rem; white-space: nowrap; }
+.numbers i { color: var(--muted); font-style: normal; }
+
+/* ------------------------------------------------------------- inputs -- */
+
+.answer, .signup { margin-top: 1.2rem; }
+.answer__row { display: flex; gap: .5rem; flex-wrap: wrap; }
+
+.answer__input {
+  flex: 1 1 12rem;
+  min-width: 0;
+  font-family: var(--mono);
+  font-size: .92rem;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  padding: .6rem .7rem;
+}
+.answer__input:focus-visible { outline: 2px solid var(--hot); outline-offset: 1px; }
+.answer__input::placeholder { color: var(--muted); }
+
+.btn {
+  font-family: var(--cond);
+  font-weight: 700;
+  font-size: .8rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--paper);
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  padding: .6rem 1.2rem;
+  cursor: pointer;
+  transition: background-color .15s, color .15s;
+}
+.btn:hover { background: var(--hot); border-color: var(--hot); }
+.btn:focus-visible { outline: 2px solid var(--hot); outline-offset: 2px; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn--go { background: var(--hot); border-color: var(--hot); }
+.btn--go:hover { background: var(--ink); border-color: var(--ink); }
+.btn--quiet { background: none; color: var(--muted); border-color: var(--rule); margin-top: 1rem; }
+.btn--quiet:hover { background: none; color: var(--rust); border-color: var(--rust); }
+
+.answer__result { min-height: 1.4rem; margin: .6rem 0 0; font-size: .84rem; }
+.answer__result[data-tone="good"] { color: var(--hot); }
+.answer__result[data-tone="bad"] { color: var(--rust); }
+.answer__result[data-tone="muted"] { color: var(--muted); }
+
+/* -------------------------------------------------------------- board -- */
+
+.tally { overflow-x: auto; }
+.tally table { border-collapse: collapse; width: 100%; }
+.tally td.cell, .tally thead th:not(:first-child) { width: 14px; }
+.tally thead th:not(:first-child):not(.hours) { font-size: .6rem; overflow: visible; }
+.tally th, .tally td { padding: .16rem .18rem; text-align: left; font-size: .78rem; }
+.tally thead th {
+  font-family: var(--cond);
+  font-weight: 600;
+  font-size: .64rem;
+  letter-spacing: .1em;
+  color: var(--muted);
+  text-align: center;
+  padding-bottom: .4rem;
+}
+.tally thead th:first-child { text-align: left; letter-spacing: .16em; }
+.tally tbody tr { border-top: 1px solid var(--grid-empty); }
+.tally th:first-child, .tally td:first-child {
+  white-space: nowrap;
+  padding-right: .7rem;
+  position: sticky;
+  left: 0;
+  background: var(--paper);
+  box-shadow: 6px 0 6px -6px rgba(0, 0, 0, .35);
+}
+.tally .hours { text-align: right; color: var(--muted); font-size: .72rem; padding-left: .6rem; }
+.tally tr[data-status="out"] td:first-child { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--rust); }
+.tally tr[data-status="winner"] td:first-child { color: var(--hot); font-weight: 700; }
+.tally tr[data-status="assist"] td:first-child { color: var(--ink); }
+.tally td.cell { text-align: center; padding: .16rem 1px; }
+.tally .hours { position: sticky; right: 0; background: var(--paper); padding-left: .6rem; box-shadow: -6px 0 6px -6px rgba(0, 0, 0, .35); }
+/* Keep the newest hour clear of the sticky totals column. */
+.tally td.cell:nth-last-child(2), .tally thead th:nth-last-child(2) { padding-right: .6rem; }
+.tally thead th.hours { text-align: right; }
+
+.mark { display: inline-block; width: 8px; height: 8px; vertical-align: middle; }
+.mark--done { background: var(--ink); }
+.mark--running { border: 1px solid var(--hot); animation: blink 1.6s steps(2, end) infinite; }
+.mark--dnf { background: var(--rust); clip-path: polygon(0 15%, 15% 0, 50% 35%, 85% 0, 100% 15%, 65% 50%, 100% 85%, 85% 100%, 50% 65%, 15% 100%, 0 85%, 35% 50%); }
+.mark--gone { background: var(--grid-empty); }
+.mark--miss { background: var(--grid-empty); }
+
+@keyframes blink { 50% { opacity: .2; } }
+
+.legend { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1rem 0 0; font-size: .72rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: .35rem; }
+
+.empty { color: var(--muted); font-size: .84rem; margin: 0; }
+
+/* --------------------------------------------------------------- you -- */
+
+.you__handle { font-family: var(--cond); font-weight: 700; font-size: 1.6rem; letter-spacing: .06em; margin: 0 0 .8rem; }
+.you__stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; margin: 0 0 1rem; }
+.you__stats dt { font-family: var(--cond); font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.you__stats dd { margin: 0; font-weight: 600; }
+.you__token summary { cursor: pointer; font-size: .78rem; color: var(--muted); }
+.you__token code { display: block; word-break: break-all; font-size: .74rem; margin-top: .5rem; color: var(--hot); }
+
+/* ------------------------------------------------------------ record -- */
+
+.ticker { list-style: none; margin: 0; padding: 0; max-height: 15rem; overflow-y: auto; columns: 2; column-gap: 2.5rem; }
+@media (max-width: 760px) { .ticker { columns: 1; } }
+.ticker__item { display: flex; gap: .7rem; font-size: .8rem; padding: .28rem 0; border-bottom: 1px solid var(--grid-empty); break-inside: avoid; }
+.ticker__when { color: var(--muted); flex: none; font-size: .74rem; padding-top: .1rem; }
+.ticker__item[data-type="dnf"] strong { color: var(--rust); }
+.ticker__item[data-type="solve"] strong { color: var(--hot); }
+.ticker__item[data-type="bell"] { color: var(--muted); }
+.ticker__item[data-type="winner"] { color: var(--hot); font-weight: 600; }
+
+/* ------------------------------------------------------------ footer -- */
+
+.footer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: clamp(1.4rem, 4vw, 3rem);
+  padding: clamp(1.8rem, 4vw, 3rem) var(--gutter) 3rem;
+}
+.footer .code { font-size: .76rem; }
+
+/* ------------------------------------------------------------- bell FX -- */
+
+body[data-ringing="true"] .lamp { animation: flare .9s ease-out; }
+@keyframes flare { 0% { filter: brightness(2.4); } 100% { filter: brightness(1); } }
+
+/* ------------------------------------------------------------ responsive -- */
+
+@media (max-width: 900px) {
+  .bell { grid-template-columns: 1fr auto; }
+  .bell__stats { grid-column: 1 / -1; }
+  .grid { grid-template-columns: 1fr; }
+  .panel--hour { grid-row: auto; }
+  .panel--record { grid-column: auto; }
+}
+
+@media (max-width: 520px) {
+  .bell { grid-template-columns: 1fr; align-items: start; }
+  .bell__hour { text-align: left; }
+  .masthead { padding-bottom: .8rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: .01ms !important; }
+}
