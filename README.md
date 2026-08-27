@@ -54,6 +54,11 @@ running the real challenges through the real solvers. A whole ultra in a few min
 `LHU_DEMO_HOUR=45` gives them longer to think and pushes the race deeper; `LHU_DEMO_BOTS=8` puts
 the full roster on the line.
 
+It often ends with nobody winning. The bots all run the same solver, so when an hour crosses that
+solver's ceiling it tends to take the whole surviving field at once — which is exactly the ending
+the rules are built to handle, and exactly what happens at real backyard ultras when the last few
+runners break together. A field of humans with their own tooling spreads out a lot more.
+
 ## Play
 
 From the browser, or from a terminal:

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { generateChallenge, publicView, FAMILIES } from '../src/core/challenges/index.js';
+import { rngFor } from '../src/core/rng.js';
 import { solve } from '../tools/solver.js';
 
 /**
@@ -34,6 +35,27 @@ test('every family is solvable at the hour it unlocks', () => {
     assert.ok(answer !== null, `${family.id} was unsolvable at hour ${hour}`);
     assert.ok(full.verify(answer), `${family.id} produced a wrong answer at hour ${hour}`);
   }
+});
+
+test('the bytecode solver reads every shape the generator emits', () => {
+  // One register then two then three, flat loops then nested ones, and loop
+  // counts far past anything you could emulate. The disassembler has to find
+  // the affine step in all of them.
+  const vm = FAMILIES.find((f) => f.id === 'vm');
+  const shapes = new Set();
+  for (let hour = vm.minHour; hour <= vm.maxHour; hour++) {
+    const challenge = vm.generate(hour, rngFor('vm-shapes', hour));
+    const params = vm.params(hour);
+    shapes.add(`${params.regs}:${params.nested}`);
+
+    const answer = solve(
+      { family: 'vm', hour, data: challenge.data },
+      { budgetMs: 5_000 },
+    );
+    assert.equal(answer, challenge.answer, `hour ${hour} was read wrong`);
+  }
+  // one accumulator flat, two flat, two nested, three nested
+  assert.equal(shapes.size, 4, `exercised ${shapes.size} program shapes, expected 4`);
 });
 
 test('a solver that runs out of time says so instead of guessing', () => {
