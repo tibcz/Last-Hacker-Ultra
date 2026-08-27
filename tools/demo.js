@@ -29,14 +29,14 @@ const BOTS = Number(process.env.LHU_DEMO_BOTS ?? 6);
  * here is on the second-worst hardware.
  */
 const ROSTER = [
-  { handle: 'nightshift',  skill: 0.95, power: 0.6, flake: 0.00 },
-  { handle: 'coldbrew',    skill: 0.55, power: 3.2, flake: 0.02 },
-  { handle: 'segfault',    skill: 0.80, power: 1.4, flake: 0.04 },
-  { handle: 'ninetail',    skill: 0.35, power: 2.4, flake: 0.03 },
-  { handle: 'hexdump',     skill: 0.70, power: 0.4, flake: 0.05 },
-  { handle: 'kernelpanic', skill: 0.45, power: 1.0, flake: 0.09 },
-  { handle: 'sudonym',     skill: 0.25, power: 1.8, flake: 0.07 },
-  { handle: 'ratelimit',   skill: 0.60, power: 0.2, flake: 0.12 },
+  { handle: 'nightshift',  skill: 0.95, power: 2.20, flake: 0.00 },
+  { handle: 'coldbrew',    skill: 0.55, power: 1.20, flake: 0.02 },
+  { handle: 'segfault',    skill: 0.85, power: 0.60, flake: 0.05 },
+  { handle: 'ninetail',    skill: 0.35, power: 1.10, flake: 0.03 },
+  { handle: 'hexdump',     skill: 0.70, power: 0.38, flake: 0.06 },
+  { handle: 'kernelpanic', skill: 0.45, power: 0.40, flake: 0.09 },
+  { handle: 'sudonym',     skill: 0.90, power: 0.14, flake: 0.04 },
+  { handle: 'ratelimit',   skill: 0.30, power: 0.25, flake: 0.12 },
 ];
 
 const C = {

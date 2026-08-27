@@ -81,7 +81,12 @@ async function run() {
       continue;
     }
 
-    const budget = Math.max(500, Math.min(race.msToBell - 400, race.hourSeconds * 1000 * skill));
+    // Patience buys you seconds; a better machine buys you more done per
+    // second, which from the clock's point of view is the same thing.
+    const budget = Math.max(
+      500,
+      Math.min(race.msToBell - 400, race.hourSeconds * 1000 * skill * power),
+    );
     const started = Date.now();
     const answer = solve(challenge, { budgetMs: budget, power });
     const spent = Date.now() - started;

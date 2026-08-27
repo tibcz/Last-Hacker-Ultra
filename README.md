@@ -16,13 +16,13 @@ and there is no hour at which it becomes impossible — only the hour at which i
 **for you**.
 
 ```
-  hour 24  ATTRITION                       difficulty ×27.5
-  next bell in 41:08   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░
+  hour 34  DEEP HOURS                            difficulty ×116.2
+  next bell in 41:08   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░░░░░░░░░░░░░░░
 
-  hacker       1234567890123456789012345678901234  hrs
+  hacker       hour 1 ──────────────────────────► 34  hrs
   nightshift   ██████████████████████████████████   34
   coldbrew     ██████████████████████████████████   34
-  segfault     ███████████████████████████████✕···  31
+  segfault     ███████████████████████████████✕··   31
   deadbeef     ██████████████████████████✕·······   26
   ninetail     ██████████████████████✕···········   22
   hexdump      ██████████████✕···················   14
@@ -49,9 +49,10 @@ The admin token is printed when the server boots, or you can pin it with `LHU_AD
 npm run demo
 ```
 
-Eight bots with different amounts of patience, on 20-second hours, running the real challenges
-through the real solvers. A full ultra in about five minutes. `LHU_DEMO_HOUR=45` gives them longer
-to think and pushes the race deeper; `LHU_DEMO_BOTS=4` thins the field.
+Six hackers with different amounts of patience and very different hardware, on 20-second hours,
+running the real challenges through the real solvers. A whole ultra in a few minutes.
+`LHU_DEMO_HOUR=45` gives them longer to think and pushes the race deeper; `LHU_DEMO_BOTS=8` puts
+the full roster on the line.
 
 ## Play
 
