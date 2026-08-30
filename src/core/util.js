@@ -5,9 +5,6 @@ export const sha256 = (input) =>
 
 export const sha256hex = (input) => sha256(input).toString('hex');
 
-export const md5hex = (input) =>
-  createHash('md5').update(typeof input === 'string' ? Buffer.from(input, 'utf8') : input).digest('hex');
-
 /** Count leading zero *bits* of a buffer. */
 export function leadingZeroBits(buf) {
   let bits = 0;

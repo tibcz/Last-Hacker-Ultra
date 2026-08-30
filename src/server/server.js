@@ -15,11 +15,12 @@ const WEB_ROOT = join(here, '..', '..', 'web');
 
 const env = (key, fallback) => process.env[key] ?? fallback;
 const PORT = Number(env('LHU_PORT', 3000));
-const HOST = env('LHU_HOST', '0.0.0.0');
+const HOST = env('LHU_HOST', '127.0.0.1');
 const DATA_FILE = env('LHU_DATA', join(here, '..', '..', 'data', 'race.json'));
 const HOUR_SECONDS = Number(env('LHU_HOUR_SECONDS', 3600));
 const ADMIN_TOKEN = env('LHU_ADMIN_TOKEN', token(16));
 const ADMIN_TOKEN_GENERATED = !process.env.LHU_ADMIN_TOKEN;
+const TRUST_PROXY = env('LHU_TRUST_PROXY', '') === '1';
 
 export function createRaceServer({
   dataFile = DATA_FILE,
@@ -28,6 +29,7 @@ export function createRaceServer({
   raceName = env('LHU_RACE_NAME', 'Last Hacker Ultra'),
   seed = env('LHU_SEED', undefined),
   lateEntry = env('LHU_LATE_ENTRY', '') === '1',
+  trustProxy = TRUST_PROXY,
   persist = true,
 } = {}) {
   const store = persist ? new Store(dataFile) : null;
@@ -122,7 +124,7 @@ export function createRaceServer({
 
     if (method === 'POST' && path === '/api/signup') {
       advance();
-      const gate = signupLimit.take(clientIp(req));
+      const gate = signupLimit.take(clientIp(req, trustProxy));
       if (!gate.ok) {
         json(res, 429, { error: 'too many signups from this address', retryAfterMs: gate.retryAfterMs });
         return true;

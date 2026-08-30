@@ -7,17 +7,18 @@ import { sha256, leadingZeroBits } from '../src/core/util.js';
 
 const ADMIN = 'test-admin-token';
 
-async function withServer(run) {
-  const app = createRaceServer({ hourSeconds: 30, persist: false, adminToken: ADMIN, seed: 'http-test' });
+async function withServer(run, options = {}) {
+  const app = createRaceServer({ hourSeconds: 30, persist: false, adminToken: ADMIN, seed: 'http-test', ...options });
   await new Promise((resolve) => app.server.listen(0, '127.0.0.1', resolve));
   const base = `http://127.0.0.1:${app.server.address().port}`;
 
-  const call = async (path, { method = 'GET', body, token } = {}) => {
+  const call = async (path, { method = 'GET', body, token, headers = {} } = {}) => {
     const res = await fetch(base + path, {
       method,
       headers: {
         ...(body ? { 'content-type': 'application/json' } : {}),
         ...(token ? { authorization: `Bearer ${token}` } : {}),
+        ...headers,
       },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
@@ -189,4 +190,40 @@ test('malformed JSON is a 400, not a crash', async () => {
     });
     assert.equal(res.status, 400);
   });
+});
+
+/*
+ * The signup limiter is the only per-address control there is, so the header
+ * that names the address has to be worth something. Anyone can set
+ * x-forwarded-for; only a proxy we were told about gets believed.
+ */
+test('a spoofed x-forwarded-for cannot refill the signup limit', async () => {
+  await withServer(async ({ call }) => {
+    const codes = [];
+    for (let i = 0; i < 11; i++) {
+      const res = await call('/api/signup', {
+        method: 'POST',
+        body: { handle: `spoof${i}` },
+        headers: { 'x-forwarded-for': `10.0.0.${i}` },
+      });
+      codes.push(res.status);
+    }
+    assert.equal(codes.filter((c) => c === 201).length, 8, 'the limiter must cap at 8 regardless of the header');
+    assert.ok(codes.includes(429), 'the eventual answer must be 429');
+  });
+});
+
+test('x-forwarded-for is honoured once an operator vouches for the proxy', async () => {
+  await withServer(async ({ call }) => {
+    const codes = [];
+    for (let i = 0; i < 11; i++) {
+      const res = await call('/api/signup', {
+        method: 'POST',
+        body: { handle: `proxied${i}` },
+        headers: { 'x-forwarded-for': `10.0.0.${i}` },
+      });
+      codes.push(res.status);
+    }
+    assert.ok(!codes.includes(429), 'distinct forwarded addresses are distinct buckets when trusted');
+  }, { trustProxy: true });
 });

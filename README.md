@@ -157,21 +157,24 @@ POST /api/admin/new        {"hourSeconds": 3600, "seed": "...", "maxHours": 0}
 POST /api/admin/bell       ring the next bell early (demo and testing)
 ```
 
-Tokens are stored hashed. Submissions are rate limited per hacker and signups per address. Past
-hours are readable with their answers; the live hour never is.
+Tokens are stored hashed. Submissions are rate limited per hacker and signups per address — the
+address the socket actually came from, since `x-forwarded-for` is client-settable and would
+otherwise hand out a fresh bucket per request. Behind a reverse proxy, set `LHU_TRUST_PROXY=1` and
+the header is believed instead. Past hours are readable with their answers; the live hour never is.
 
 ## Configuration
 
 | variable | default | |
 |---|---|---|
 | `LHU_PORT` | `3000` | |
-| `LHU_HOST` | `0.0.0.0` | |
+| `LHU_HOST` | `127.0.0.1` | loopback by default; set `0.0.0.0` to open it to the network |
 | `LHU_HOUR_SECONDS` | `3600` | shorten it and the whole race compresses |
 | `LHU_ADMIN_TOKEN` | random per boot | printed on start if unset |
 | `LHU_SEED` | random | pin it and the race is reproducible |
 | `LHU_DATA` | `data/race.json` | atomic writes; a crash cannot corrupt it |
 | `LHU_RACE_NAME` | `Last Hacker Ultra` | |
 | `LHU_LATE_ENTRY` | off | `1` lets people join mid-race |
+| `LHU_TRUST_PROXY` | off | `1` to rate limit on `x-forwarded-for`. Only behind a proxy that sets it |
 
 The server can be stopped and restarted mid-race. On the next request it replays every bell it
 slept through and eliminates whoever should have been eliminated.
@@ -187,7 +190,7 @@ web/                   the board — the light drains out of it as the hours pil
 bin/lhu.js             the CLI
 tools/solver.js        reference attacks, one per family
 tools/demo.js          a whole ultra in five minutes
-test/                  45 tests, no fixtures, no mocks
+test/                  48 tests, no fixtures, no mocks
 ```
 
 ## Licence

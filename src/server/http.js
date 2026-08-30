@@ -52,9 +52,19 @@ export function bearer(req) {
   return match ? match[1].trim() : null;
 }
 
-export function clientIp(req) {
-  const forwarded = req.headers['x-forwarded-for'];
-  if (typeof forwarded === 'string' && forwarded.length) return forwarded.split(',')[0].trim();
+/**
+ * The address a request came from, for rate limiting.
+ *
+ * `x-forwarded-for` is set by the client unless something trusted overwrites
+ * it, so honouring it by default would hand every rate limit a free bypass:
+ * vary the header, get a fresh bucket. It is only read when the operator
+ * confirms there really is a proxy in front, via LHU_TRUST_PROXY=1.
+ */
+export function clientIp(req, trustProxy = false) {
+  if (trustProxy) {
+    const forwarded = req.headers['x-forwarded-for'];
+    if (typeof forwarded === 'string' && forwarded.length) return forwarded.split(',')[0].trim();
+  }
   return req.socket.remoteAddress ?? 'unknown';
 }
 
